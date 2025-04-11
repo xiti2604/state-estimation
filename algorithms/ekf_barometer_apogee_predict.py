@@ -100,22 +100,32 @@ def correct(x, P, R, pbaro):
 # Apogee estimator
 def ode_ballistic(t, state, constants):
     # [rho, m, g_val, A]
-    g = constants[0]
+    g_ground = constants[0]
     rho = constants[1]
     m_dry = constants[2]
     A = constants[3]
-
+    
+    Re = 6371.007181 * 10**3
+    # Source: https://visibleearth.nasa.gov/images/104158/spain-and-portugal
+    g = g_ground * (Re/(Re + y))**2
+    
     vy = state[2]
     vz = state[3]
     v = np.sqrt((vy**2)+(vz**2))
 
     # Retrieve a drag coefficient based on the current velocity.
     Cd_val = float(Cd_f(v)) if v > 15 else 0.4
+    
+    #Acceleration from drag. 
+    a = (rho * Cd_val * A * v**2) / (2 * m)
+
+    # Retrieve a ballistic coefficient based on the current velocity and acceleration.
+    C_b = rho * v**2 / (2 * a)
 
     dydt = vy
     dzdt = vz
-    dvydt = -((rho * Cd_val * A) / (2 * m_dry)) * vy * np.sqrt(vy**2 + vz**2)
-    dvzdt = -g - ((rho * Cd_val * A) / (2 * m_dry)) * vz * np.sqrt(vy**2 + vz**2)
+    dvydt = 0    #Unimportant
+    dvzdt = -g - (rho * (dzdt**2))/(2 * C_b)
     
     return [dydt, dzdt, dvydt, dvzdt]
 
